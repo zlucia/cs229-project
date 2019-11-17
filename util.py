@@ -99,7 +99,7 @@ class FontData:
 	@classmethod
 	def get_image(cls, font_name):
 		filename = cls.fj_images.loc[font_name].values[0]
-		return plt.imread(filename)
+		return plt.imread(filename)[:, :, 0]
 
 	@classmethod
 	def get_all_name(cls, kind):
