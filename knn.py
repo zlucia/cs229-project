@@ -79,9 +79,9 @@ od_attribute_labels = od_font_attributes.merge(shared_font_names, how='inner', o
 
 ##### KNN
 X = fj_labeled_font_vectors.iloc[:, 1:]
-# Chose k=5 since error appears to plateau there in od (Fig 6), chose cosine similarity to replicate od
+# Chose k=4 since error appears to plateau there in od (Fig 6), chose cosine similarity to replicate od
 # Could experiment with different values of k and other similarity metrics
-knn_model = NearestNeighbors(n_neighbors=5, metric='cosine')
+knn_model = NearestNeighbors(n_neighbors=4, metric='cosine')
 knn_model.fit(X)
 # Indices of the knns for each unlabeled font
 nns = knn_model.kneighbors(fj_unlabeled_font_vectors.iloc[:, 1:], return_distance=False)
@@ -108,6 +108,8 @@ ordered_col_names =  np.hstack((geometric_features, semantic_features))
 # Columns re-ordered so that col 0 is font_name, cols [1:7] are geometric_features, cols [7:] are semantic_features
 # Note: randomize row ordering when splitting into train/test/validation, current row ordering has all predicted font data before known font data
 knn_dataset = all_attribute_labels[ordered_col_names]
+knn_dataset = knn_dataset.set_index(['font_name'])
+knn_dataset = (knn_dataset-knn_dataset.mean())/knn_dataset.std()
 
 # Export knn_dataset to csv file
-knn_dataset.to_csv('knn_dataset.csv', index=False)
+knn_dataset.to_csv('knn_dataset.csv', index=True)
