@@ -37,7 +37,7 @@ class FontData:
 			cls.fj_font_data.sort_values(0)
 		print("done")
 
-		print("Loading geometric + semantic vectors...", end="")
+		print("Loading typographic + semantic vectors...", end="")
 		if cls.knn_dataset is None:
 			cls.knn_dataset = pd.read_csv("knn_dataset.csv").set_index(['font_name'])
 			cls.knn_dataset = cls.knn_dataset.merge(cls.fj_font_names, how="right", left_on="font_name", right_on=0).set_index("font_name").iloc[:, :-1] # better way to restrict the knn dataset?
@@ -92,7 +92,7 @@ class FontData:
 		return cls.knn_dataset.loc[font_name].values[6:]
 
 	@classmethod
-	def get_geometric(cls, font_name):
+	def get_typographic(cls, font_name):
 		cls.check_valid(font_name)
 		return cls.knn_dataset.loc[font_name].values[:5]
 
@@ -118,7 +118,7 @@ class FontData:
 		return cls.knn_dataset.values[:, 6:].take(cls.get_indices(kind), axis=0)
 
 	@classmethod
-	def get_all_geometric(cls, kind):
+	def get_all_typographic(cls, kind):
 		return cls.knn_dataset.values[:, 0:5].take(cls.get_indices(kind), axis=0)
 
 	@classmethod
@@ -134,9 +134,9 @@ class FontDataset():
 		self.kind = kind
 		self.name = FontData.get_all_name(kind)
 		self.embedding = FontData.get_all_embedding(kind)
-		self.geometric = FontData.get_all_geometric(kind)
+		self.typographic = FontData.get_all_typographic(kind)
 		self.semantic = FontData.get_all_semantic(kind)
-		assert len(self.embedding) == len(self.geometric) == len(self.semantic)
+		assert len(self.embedding) == len(self.typographic) == len(self.semantic)
 
 	def __len__(self):
 		return len(self.embedding)
@@ -144,7 +144,7 @@ class FontDataset():
 	def __getitem__(self, idx):
 		sample = {'name': self.name[idx][0],
 				  'embedding': self.embedding[idx],
-				  'geometric': self.geometric[idx],
+				  'typographic': self.typographic[idx],
 				  'image': self.data.get_image(self.data.get_name(idx, self.kind)),
 				  'semantic': self.semantic[idx]
 				  }

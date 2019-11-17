@@ -102,10 +102,10 @@ all_attribute_labels = pd.concat([predicted_attribute_labels, known_attribute_la
 od_attribute_names = np.loadtxt('attrNames.txt', dtype=str)
 od_attribute_names = np.insert(od_attribute_names, 0, 'font_name')
 all_attribute_labels.columns = od_attribute_names
-geometric_features = np.asarray(['font_name', 'capitals', 'cursive', 'display', 'italic', 'monospace', 'serif'])
-semantic_features = od_attribute_names[~np.isin(od_attribute_names, geometric_features)]
-ordered_col_names =  np.hstack((geometric_features, semantic_features))
-# Columns re-ordered so that col 0 is font_name, cols [1:7] are geometric_features, cols [7:] are semantic_features
+typographic_features = np.asarray(['font_name', 'capitals', 'cursive', 'display', 'italic', 'monospace', 'serif'])
+semantic_features = od_attribute_names[~np.isin(od_attribute_names, typographic_features)]
+ordered_col_names =  np.hstack((typographic_features, semantic_features))
+# Columns re-ordered so that col 0 is font_name, cols [1:7] are typographic_features, cols [7:] are semantic_features
 # Note: randomize row ordering when splitting into train/test/validation, current row ordering has all predicted font data before known font data
 knn_dataset = all_attribute_labels[ordered_col_names]
 knn_dataset = knn_dataset.set_index(['font_name'])
