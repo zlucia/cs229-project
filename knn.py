@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import re
 from collections import OrderedDict
-from sklearn.neighbors import NearestNeighbors
+from sklearn.neighbors import KNeighborsRegressor, NearestNeighbors
 
 ##### DATA INGESTION
 fj_font_metadata = pd.read_csv('metadata.tsv', delimiter='\t', header=None, skiprows=1)
@@ -78,6 +78,26 @@ fj_labeled_font_vectors = fj_fonts[fj_font_names.iloc[:, 0].isin(shared_font_nam
 od_attribute_labels = od_font_attributes.merge(shared_font_names, how='inner', on=0).sort_values(by=0).reset_index(drop=True)
 
 ##### KNN
+def get_weights(distances):
+	k = distances.shape[1]
+	numerator = (np.sum(distances, axis=1) - distances.T).T
+	denominator = np.sum(distances)
+	weights = (1 / (k - 1)) * (numerator/denominator)
+	return weights
+
+def cosine_similarity(x, y):
+	return np.dot(x, y) / (np.linalg.norm(x) * np.linalg.norm(y))
+
+X = fj_labeled_font_vectors.iloc[:, 1:]
+y = od_attribute_labels.iloc[:, 1:]
+knn_model = KNeighborsRegressor(n_neighbors=4, weights=get_weights, metric=cosine_similarity)
+knn_model.fit(X, y)
+preds = knn_model.predict(fj_unlabeled_font_vectors.iloc[:, 1:])
+predicted_attribute_labels = pd.DataFrame(np.concatenate((fj_unlabeled_font_vectors.iloc[:, 0:1], preds), axis=1))
+known_attribute_labels = od_font_attributes
+all_attribute_labels = pd.concat([predicted_attribute_labels, known_attribute_labels], axis=0)
+print(all_attribute_labels)
+
 X = fj_labeled_font_vectors.iloc[:, 1:]
 # Chose k=4 since error appears to plateau there in od (Fig 6), chose cosine similarity to replicate od
 # Could experiment with different values of k and other similarity metrics
@@ -96,20 +116,20 @@ all_attribute_labels = pd.concat([predicted_attribute_labels, known_attribute_la
 # Expect this to be 1992 rows, since we've predicted for 1722 fonts with unknown attributes for fonts in fj not in od
 # and know the attributes for 161 common fonts and an additional 39 fonts in od that are not in fj 
 # (who od attribute labels weren't used in knn since their font vectors are not in fj)
-# print(all_attribute_labels.shape)
+print(all_attribute_labels)
 
-# Format nicely
-od_attribute_names = np.loadtxt('attrNames.txt', dtype=str)
-od_attribute_names = np.insert(od_attribute_names, 0, 'font_name')
-all_attribute_labels.columns = od_attribute_names
-typographic_features = np.asarray(['font_name', 'capitals', 'cursive', 'display', 'italic', 'monospace', 'serif'])
-semantic_features = od_attribute_names[~np.isin(od_attribute_names, typographic_features)]
-ordered_col_names =  np.hstack((typographic_features, semantic_features))
-# Columns re-ordered so that col 0 is font_name, cols [1:7] are typographic_features, cols [7:] are semantic_features
-# Note: randomize row ordering when splitting into train/test/validation, current row ordering has all predicted font data before known font data
-knn_dataset = all_attribute_labels[ordered_col_names]
-knn_dataset = knn_dataset.set_index(['font_name'])
-knn_dataset = (knn_dataset-knn_dataset.mean())/knn_dataset.std()
+# # Format nicely
+# od_attribute_names = np.loadtxt('attrNames.txt', dtype=str)
+# od_attribute_names = np.insert(od_attribute_names, 0, 'font_name')
+# all_attribute_labels.columns = od_attribute_names
+# typographic_features = np.asarray(['font_name', 'capitals', 'cursive', 'display', 'italic', 'monospace', 'serif'])
+# semantic_features = od_attribute_names[~np.isin(od_attribute_names, typographic_features)]
+# ordered_col_names =  np.hstack((typographic_features, semantic_features))
+# # Columns re-ordered so that col 0 is font_name, cols [1:7] are typographic_features, cols [7:] are semantic_features
+# # Note: randomize row ordering when splitting into train/test/validation, current row ordering has all predicted font data before known font data
+# knn_dataset = all_attribute_labels[ordered_col_names]
+# knn_dataset = knn_dataset.set_index(['font_name'])
+# knn_dataset = (knn_dataset-knn_dataset.mean())/knn_dataset.std()
 
-# Export knn_dataset to csv file
-knn_dataset.to_csv('knn_dataset.csv', index=True)
+# # Export knn_dataset to csv file
+# knn_dataset.to_csv('knn_dataset.csv', index=True)
