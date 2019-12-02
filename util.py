@@ -61,7 +61,6 @@ class FontData:
 			else:
 				fj_font_glyph_filenames = pd.DataFrame([glyph_path + '\\ '.join(f.split()) for f in sorted(os.listdir(glyph_path)) if not f.startswith('.')])
 				cls.fj_glyphs = pd.concat([cls.fj_font_names, fj_font_glyph_filenames, ], axis=1, ignore_index=True).set_index([0])
-				print(cls.fj_glyphs)
 
 	@classmethod
 	def check_valid(cls, font_name):
