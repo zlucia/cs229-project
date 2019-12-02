@@ -1,25 +1,17 @@
 import numpy as np
 import pandas as pd
 import requests, io, zipfile
-import time
 import os
 import string
-from PIL import Image, ImageFont
+import matplotlib.pyplot as plt
+import matplotlib.font_manager as font_manager
 from collections import OrderedDict
-from bs4 import BeautifulSoup
 from importlib import reload
 import util
 reload(util)
 
-data = util.FontData
-data.load()
-font_names_full = pd.DataFrame(np.sort(data.get_all_name('all'), axis=None).astype(str))
-#print(font_names_full)
-font_names_link = pd.DataFrame(font_names_full.iloc[:, 0].str.split().str[0:-1].str.join('+'))
-font_names_link = font_names_link.drop_duplicates().reset_index(drop=True)
-#print(font_names_link)
-
-gwf_url = 'https://fonts.google.com/download?family='
+# Takes roughly 20 min to run
+# Outputs .ttf font files to font_files directory, .png glyph files to font_glyphs directory
 
 mapping = OrderedDict([
 		('Thin', '100'),
@@ -43,18 +35,6 @@ mapping = OrderedDict([
 		('Oblique', 'italic'),
 	])
 
-# def get_download_url(url, font_name):
-# 	download_url = ''
-# 	if url == ff_url:
-# 		search_url = url + font_name + '.font'
-# 		response = requests.get(search_url)
-# 		soup = BeautifulSoup(response.text, 'html.parser')
-# 		url_suffix = soup.select_one('a[href^="/d/"]')['href']
-# 		download_url = url + url_suffix[1:]
-# 	elif url == fs_url:
-# 		download_url = 
-# 	return download_url
-
 def get_font_name_full(file):
 	name_tokens = file[0:-4].split('-')
 	for w, rw in mapping.items():
@@ -65,22 +45,57 @@ def get_font_name_full(file):
 	name = ' '.join(name_tokens)
 	return name
 
+# Load font names
+data = util.FontData
+data.load()
+font_names_full = pd.DataFrame(np.sort(data.get_all_name('all'), axis=None).astype(str))
+font_names_link = pd.DataFrame(font_names_full.iloc[:, 0].str.split().str[0:-1].str.join('+'))
+font_names_link = font_names_link.drop_duplicates().reset_index(drop=True)
+
 # Downloads font files (.otf/.ttf)
+gf_url = 'https://fonts.google.com/download?family='
 fontfiles_path = './font_files/'
 if not os.path.exists(fontfiles_path):
 	os.makedirs(fontfiles_path)
-# for index in font_names_link.index:
-#   font_name = font_names_link.iloc[index, 0]
-font_name = 'ABeeZee'
-download_url = gwf_url + font_name
-try:
-	r = requests.get(download_url)
-	r.raise_for_status()
-	z = zipfile.ZipFile(io.BytesIO(r.content))
-	for file in z.namelist():
-		name = get_font_name_full(file)
-		# Extract font files for font names in dataset
-		if name in font_names_full.values:
-			z.extract(file, fontfiles_path)
-except requests.exceptions.HTTPError as err:
-	print(err)
+for index in font_names_link.index:
+	font_name = font_names_link.iloc[index, 0]
+	download_url = gf_url + font_name
+	try:
+		r = requests.get(download_url)
+		r.raise_for_status()
+		z = zipfile.ZipFile(io.BytesIO(r.content))
+		for file in z.namelist():
+			name = get_font_name_full(file)
+			# Extract font files for font names in dataset
+			if name in font_names_full.values:
+				z.extract(file, fontfiles_path)
+	except requests.exceptions.HTTPError as err:
+		print(err)
+
+# Get per glyph .png files from font files
+point_size = 10
+fig_size = (128/600, 128/600)
+
+fontglyphs_path = './font_glyphs/'
+if not os.path.exists(fontglyphs_path):
+	os.makedirs(fontglyphs_path)
+
+fontfiles_dir = os.fsencode(fontfiles_path)
+for file in os.listdir(fontfiles_dir):
+	filename = os.fsdecode(file)
+	if not filename.endswith('.ttf') and not filename.endswith('.otf'):
+		continue
+
+	# Using matplotlib
+	font_path = fontglyphs_path + get_font_name_full(filename) + '/'
+	if not os.path.exists(font_path):
+		os.makedirs(font_path)
+
+	fontfile_path = fontfiles_path + filename
+	prop = font_manager.FontProperties(fname=fontfile_path)
+	for char in string.ascii_letters:
+		fig = plt.figure(figsize=fig_size, dpi=600)
+		plt.figtext(0.5, 0.5, char, ha='center', va='center', fontproperties=prop, fontsize=point_size)
+		image_path = font_path + str(ord(char)) + ".png"
+		plt.savefig(image_path, dpi=600)
+		plt.close()
