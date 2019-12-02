@@ -66,13 +66,13 @@ for index in font_names_link.index:
 		z = zipfile.ZipFile(io.BytesIO(r.content))
 		for file in z.namelist():
 			name = get_font_name_full(file)
-			# Extract font files for font names in dataset
+			# Keep only font files whose font names are in dataset
 			if name in font_names_full.values:
 				z.extract(file, fontfiles_path)
 	except requests.exceptions.HTTPError as err:
 		print(err)
 
-# Get per glyph .png files from font files
+# Extract per glyph .png files from font files
 point_size = 10
 fig_size = (128/600, 128/600)
 

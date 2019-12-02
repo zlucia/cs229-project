@@ -25,9 +25,10 @@ class FontData:
 	fj_font_data = None
 	knn_dataset = None
 	fj_images = None
+	fj_glyphs = None
 
 	@classmethod
-	def load(cls, embedding_path="vectors-200.tsv", image_path="images/", knn_path="knn_dataset.csv", metadata_path="metadata.tsv"):
+	def load(cls, embedding_path="vectors-200.tsv", image_path="images/", knn_path="knn_dataset.csv", metadata_path="metadata.tsv", glyph_path="font_glyphs/"):
 		print("Loading embeddings...", end="")
 		if cls.fj_font_data is None:
 			fj_font_metadata = pd.read_csv(metadata_path, delimiter='\t', header=None, skiprows=1)
@@ -52,6 +53,15 @@ class FontData:
 				fj_font_image_filenames = pd.DataFrame([image_path + '/' + f for f in sorted(os.listdir(image_path))])
 				cls.fj_images = pd.concat([cls.fj_font_names, fj_font_image_filenames, ], axis=1, ignore_index=True).set_index([0])
 		print("done")
+
+		print("Loading glyphs...", end="")
+		if cls.fj_glyphs is None:
+			if not os.path.isdir(glyph_path):
+				print("Glyph data not found; ignoring...", end="")
+			else:
+				fj_font_glyph_filenames = pd.DataFrame([glyph_path + '\\ '.join(f.split()) for f in sorted(os.listdir(glyph_path)) if not f.startswith('.')])
+				cls.fj_glyphs = pd.concat([cls.fj_font_names, fj_font_glyph_filenames, ], axis=1, ignore_index=True).set_index([0])
+				print(cls.fj_glyphs)
 
 	@classmethod
 	def check_valid(cls, font_name):
