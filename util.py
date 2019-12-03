@@ -59,7 +59,7 @@ class FontData:
 			if not os.path.isdir(glyph_path):
 				print("Glyph data not found; ignoring...", end="")
 			else:
-				fj_font_glyph_filenames = pd.DataFrame([glyph_path + f for f in sorted(os.listdir(glyph_path)) if not f.startswith('.')])
+				fj_font_glyph_filenames = pd.DataFrame([glyph_path + f + '/' for f in sorted(os.listdir(glyph_path)) if not f.startswith('.')])
 				cls.fj_glyphs = pd.concat([cls.fj_font_names, fj_font_glyph_filenames, ], axis=1, ignore_index=True).set_index([0])
 		print("done")
 

@@ -11,7 +11,7 @@ from importlib import reload
 import util
 reload(util)
 
-# Takes roughly 20 min to run
+# Takes roughly 30 min to run
 # Outputs .ttf font files to font_files directory, .png glyph files to font_glyphs directory
 
 mapping = OrderedDict([
@@ -78,6 +78,7 @@ for index in font_names_link.index:
 	except requests.exceptions.HTTPError as err:
 		print(err)
 
+# Move static folder font files to top level of font files directory
 staticfiles_path = fontfiles_path + 'static/'
 for file in sorted(os.listdir(staticfiles_path)):
 	shutil.move(staticfiles_path + file, fontfiles_path)
