@@ -28,7 +28,7 @@ class FontData:
 	fj_glyphs = None
 
 	@classmethod
-	def load(cls, embedding_path="vectors-200.tsv", image_path="images/", knn_path="knn_dataset.csv", metadata_path="metadata.tsv", glyph_path="font_glyphs/"):
+	def load(cls, embedding_path="vectors-200.tsv", image_path="font_images/", knn_path="knn_dataset.csv", metadata_path="metadata.tsv", glyph_path="font_glyphs/"):
 		print("Loading embeddings...", end="")
 		if cls.fj_font_data is None:
 			fj_font_metadata = pd.read_csv(metadata_path, delimiter='\t', header=None, skiprows=1)
@@ -59,6 +59,7 @@ class FontData:
 			if not os.path.isdir(glyph_path):
 				print("Glyph data not found; ignoring...", end="")
 			else:
+				# TODO: Fix bug in the ordering
 				fj_font_glyph_filenames = pd.DataFrame([glyph_path + f + '/' for f in sorted(os.listdir(glyph_path)) if not f.startswith('.')])
 				cls.fj_glyphs = pd.concat([cls.fj_font_names, fj_font_glyph_filenames, ], axis=1, ignore_index=True).set_index([0])
 		print("done")
@@ -112,6 +113,15 @@ class FontData:
 		return plt.imread(filename)[:, :, 0]
 
 	@classmethod
+	def get_glyph(cls, font_name, character):
+		filename = os.path.join(cls.fj_glyphs.loc[font_name].values[0], "{}.png".format(ord(character)))
+		return plt.imread(filename)[:, :, 0]
+
+	@classmethod
+	def get_svg(cls, font_name, character):
+		return None
+
+	@classmethod
 	def get_all_name(cls, kind):
 		return cls.fj_font_names.values.take(cls.get_indices(kind), axis=0)
 
@@ -135,27 +145,46 @@ class FontData:
 	def get_all_image(cls, kind):
 		return np.array([cls.get_image(font[0]) for font in cls.get_all_name(kind)])
 
+	@classmethod
+	def get_all_glyph(cls, kind, character):
+		return np.array([cls.get_glyph(font[0], character) for font in cls.get_all_name(kind)])
+
+	@classmethod
+	def get_all_svg(cls, kind, character):
+		return np.array([cls.get_glyph(font[0], character) for font in cls.get_all_name(kind)])
 
 class FontDataset():
 
-	def __init__(self, data, kind):
+	def __init__(self, data, kind, types=['name', 'embedding', 'typographic', 'image', 'glyph', 'svg', 'semantic'], character='A'):
 		# Load in all data at once for all kinds except images and svg
 		self.data = data
 		self.kind = kind
+		self.types = types
 		self.name = FontData.get_all_name(kind)
 		self.embedding = FontData.get_all_embedding(kind)
 		self.typographic = FontData.get_all_typographic(kind)
 		self.semantic = FontData.get_all_semantic(kind)
+		self.character = character
 		assert len(self.embedding) == len(self.typographic) == len(self.semantic)
 
 	def __len__(self):
 		return len(self.embedding)
 
 	def __getitem__(self, idx):
-		sample = {'name': self.name[idx][0],
-				  'embedding': self.embedding[idx],
-				  'typographic': self.typographic[idx],
-				  'image': self.data.get_image(self.data.get_name(idx, self.kind)),
-				  'semantic': self.semantic[idx]
-				  }
+		sample = {}
+		if 'name' in self.types:
+			sample['name'] = self.name[idx][0]
+		if 'embedding' in self.types:
+			sample['embedding'] = self.embedding[idx]
+		if 'typographic' in self.types:
+			sample['typographic'] = self.typographic[idx]
+		if 'image' in self.types:
+			sample['image'] = self.data.get_image(self.data.get_name(idx, self.kind))
+		if 'glyph' in self.types:
+  			sample['glyph'] = self.data.get_glyph(self.data.get_name(idx, self.kind), self.character)
+		if 'svg' in self.types:
+  			sample['svg'] = self.data.get_svg(self.data.get_name(idx, self.kind), self.character)
+		if 'semantic' in self.types:
+  			sample['semantic'] = self.semantic[idx]
+
 		return sample
