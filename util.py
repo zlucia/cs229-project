@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import os
 import matplotlib.pyplot as plt
+import glyph_scraper
 from torch.utils.data import Dataset
 
 # === Do not edit === #
@@ -52,6 +53,7 @@ class FontData:
 			else:
 				fj_font_image_filenames = pd.DataFrame([image_path + '/' + f for f in sorted(os.listdir(image_path))])
 				cls.fj_images = pd.concat([cls.fj_font_names, fj_font_image_filenames, ], axis=1, ignore_index=True).set_index([0])
+				print(cls.fj_images)
 		print("done")
 
 		print("Loading glyphs...", end="")
@@ -59,9 +61,9 @@ class FontData:
 			if not os.path.isdir(glyph_path):
 				print("Glyph data not found; ignoring...", end="")
 			else:
-				# TODO: Fix bug in the ordering
-				fj_font_glyph_filenames = pd.DataFrame([glyph_path + f + '/' for f in sorted(os.listdir(glyph_path)) if not f.startswith('.')])
-				cls.fj_glyphs = pd.concat([cls.fj_font_names, fj_font_glyph_filenames, ], axis=1, ignore_index=True).set_index([0])
+				sorted_fj_font_glyph_filenames = pd.DataFrame([glyph_path + f + '/' for f in sorted(os.listdir(glyph_path), key=glyph_scraper.get_font_name_compare) if not f.startswith('.')])
+				sorted_fj_font_names = pd.DataFrame([f for f in sorted(cls.fj_font_names.iloc[:, 0])])
+				cls.fj_glyphs = pd.concat([sorted_fj_font_names, sorted_fj_font_glyph_filenames, ], axis=1, ignore_index=True).set_index([0])
 		print("done")
 
 	@classmethod
