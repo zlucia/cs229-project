@@ -27,9 +27,10 @@ class FontData:
 	knn_dataset = None
 	fj_images = None
 	fj_glyphs = None
+	fj_svgs = None
 
 	@classmethod
-	def load(cls, embedding_path="vectors-200.tsv", image_path="font_images/", knn_path="knn_dataset.csv", metadata_path="metadata.tsv", glyph_path="font_glyphs/"):
+	def load(cls, embedding_path="vectors-200.tsv", image_path="font_images/", knn_path="knn_dataset.csv", metadata_path="metadata.tsv", glyph_path="font_glyphs/", svg_path="font_svgs/"):
 		print("Loading embeddings...", end="")
 		if cls.fj_font_data is None:
 			fj_font_metadata = pd.read_csv(metadata_path, delimiter='\t', header=None, skiprows=1)
@@ -64,6 +65,16 @@ class FontData:
 				sorted_fj_font_glyph_filenames = pd.DataFrame([glyph_path + f + '/' for f in sorted(os.listdir(glyph_path), key=glyph_scraper.get_font_name_compare) if not f.startswith('.')])
 				sorted_fj_font_names = pd.DataFrame([f for f in sorted(cls.fj_font_names.iloc[:, 0])])
 				cls.fj_glyphs = pd.concat([sorted_fj_font_names, sorted_fj_font_glyph_filenames, ], axis=1, ignore_index=True).set_index([0])
+		print("done")
+
+		print("Loading svgs...", end="")
+		if cls.fj_svgs is None:
+			if not os.path.isdir(svg_path):
+				print("SVG data not found; ignoring...", end="")
+			else:
+				sorted_fj_font_svg_filenames = pd.DataFrame([glyph_path + f + '/' for f in sorted(os.listdir(svg_path), key=glyph_scraper.get_font_name_compare) if not f.startswith('.')])
+				sorted_fj_font_names = pd.DataFrame([f for f in sorted(cls.fj_font_names.iloc[:, 0])])
+				cls.fj_svgs = pd.concat([sorted_fj_font_names, sorted_fj_font_svg_filenames, ], axis=1, ignore_index=True).set_index([0])
 		print("done")
 
 	@classmethod
