@@ -30,7 +30,7 @@ class FontData:
 	fj_svgs = None
 
 	@classmethod
-	def load(cls, embedding_path="vectors-200.tsv", image_path="font_images/", knn_path="knn_dataset.csv", metadata_path="metadata.tsv", glyph_path="font_glyphs/", svg_path="font_svgs/"):
+	def load(cls, embedding_path="vectors-200.tsv", image_path="font_images/", knn_path="knn_dataset.csv", metadata_path="metadata.tsv", glyph_path="font_glyphs/", svg_data="svg_data.pkl"):
 		print("Loading embeddings...", end="")
 		if cls.fj_font_data is None:
 			fj_font_metadata = pd.read_csv(metadata_path, delimiter='\t', header=None, skiprows=1)
@@ -54,7 +54,6 @@ class FontData:
 			else:
 				fj_font_image_filenames = pd.DataFrame([image_path + '/' + f for f in sorted(os.listdir(image_path))])
 				cls.fj_images = pd.concat([cls.fj_font_names, fj_font_image_filenames, ], axis=1, ignore_index=True).set_index([0])
-				print(cls.fj_images)
 		print("done")
 
 		print("Loading glyphs...", end="")
@@ -62,19 +61,17 @@ class FontData:
 			if not os.path.isdir(glyph_path):
 				print("Glyph data not found; ignoring...", end="")
 			else:
-				sorted_fj_font_glyph_filenames = pd.DataFrame([glyph_path + f + '/' for f in sorted(os.listdir(glyph_path), key=glyph_scraper.get_font_name_compare) if not f.startswith('.')])
 				sorted_fj_font_names = pd.DataFrame([f for f in sorted(cls.fj_font_names.iloc[:, 0])])
+				sorted_fj_font_glyph_filenames = pd.DataFrame([glyph_path + f + '/' for f in sorted(os.listdir(glyph_path), key=glyph_scraper.get_font_name_compare) if not f.startswith('.')])
 				cls.fj_glyphs = pd.concat([sorted_fj_font_names, sorted_fj_font_glyph_filenames, ], axis=1, ignore_index=True).set_index([0])
 		print("done")
 
-		print("Loading svgs...", end="")
+		print("Loading SVGs...", end="")
 		if cls.fj_svgs is None:
-			if not os.path.isdir(svg_path):
+			if not os.path.isfile(svg_data):
 				print("SVG data not found; ignoring...", end="")
 			else:
-				sorted_fj_font_svg_filenames = pd.DataFrame([glyph_path + f + '/' for f in sorted(os.listdir(svg_path), key=glyph_scraper.get_font_name_compare) if not f.startswith('.')])
-				sorted_fj_font_names = pd.DataFrame([f for f in sorted(cls.fj_font_names.iloc[:, 0])])
-				cls.fj_svgs = pd.concat([sorted_fj_font_names, sorted_fj_font_svg_filenames, ], axis=1, ignore_index=True).set_index([0])
+				cls.fj_svgs = pd.read_pickle(svg_data)
 		print("done")
 
 	@classmethod
@@ -194,10 +191,10 @@ class FontDataset():
 		if 'image' in self.types:
 			sample['image'] = self.data.get_image(self.data.get_name(idx, self.kind))
 		if 'glyph' in self.types:
-  			sample['glyph'] = self.data.get_glyph(self.data.get_name(idx, self.kind), self.character)
+			sample['glyph'] = self.data.get_glyph(self.data.get_name(idx, self.kind), self.character)
 		if 'svg' in self.types:
-  			sample['svg'] = self.data.get_svg(self.data.get_name(idx, self.kind), self.character)
+			sample['svg'] = self.data.get_svg(self.data.get_name(idx, self.kind), self.character)
 		if 'semantic' in self.types:
-  			sample['semantic'] = self.semantic[idx]
+			sample['semantic'] = self.semantic[idx]
 
 		return sample
