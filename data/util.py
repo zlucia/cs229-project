@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import os
 import matplotlib.pyplot as plt
-from data import glyph_scraper
+import glyph_scraper
 from torch.utils.data import Dataset
 
 # === Do not edit === #
@@ -152,7 +152,7 @@ class FontData:
 
 	@classmethod
 	def get_all_svg(cls, kind, character):
-		return np.array([cls.get_glyph(font[0], character) for font in cls.get_all_name(kind)])
+		return np.array([cls.get_svg(font[0], character) for font in cls.get_all_name(kind)])
 
 class FontDataset():
 
