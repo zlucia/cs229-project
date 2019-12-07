@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import os
 import matplotlib.pyplot as plt
-import glyph_scraper
+from data import glyph_scraper
 from torch.utils.data import Dataset
 
 # === Do not edit === #
@@ -29,7 +29,7 @@ class FontData:
 	fj_glyphs = None
 
 	@classmethod
-	def load(cls, embedding_path="vectors-200.tsv", image_path="font_images/", knn_path="knn_dataset.csv", metadata_path="metadata.tsv", glyph_path="font_glyphs/"):
+	def load(cls, embedding_path="data/vectors-200.tsv", image_path="data/font_images/", knn_path="data/knn_dataset.csv", metadata_path="data/metadata.tsv", glyph_path="data/font_glyphs/"):
 		print("Loading embeddings...", end="")
 		if cls.fj_font_data is None:
 			fj_font_metadata = pd.read_csv(metadata_path, delimiter='\t', header=None, skiprows=1)
@@ -41,7 +41,7 @@ class FontData:
 
 		print("Loading typographic + semantic vectors...", end="")
 		if cls.knn_dataset is None:
-			cls.knn_dataset = pd.read_csv("knn_dataset.csv").set_index(['font_name'])
+			cls.knn_dataset = pd.read_csv("data/knn_dataset.csv").set_index(['font_name'])
 			cls.knn_dataset = cls.knn_dataset.merge(cls.fj_font_names, how="right", left_on="font_name", right_on=0).set_index("font_name").iloc[:, :-1] # better way to restrict the knn dataset?
 			cls.knn_dataset.sort_values('font_name')
 		print("done")
@@ -53,7 +53,6 @@ class FontData:
 			else:
 				fj_font_image_filenames = pd.DataFrame([image_path + '/' + f for f in sorted(os.listdir(image_path))])
 				cls.fj_images = pd.concat([cls.fj_font_names, fj_font_image_filenames, ], axis=1, ignore_index=True).set_index([0])
-				print(cls.fj_images)
 		print("done")
 
 		print("Loading glyphs...", end="")
