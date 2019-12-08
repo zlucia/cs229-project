@@ -31,7 +31,7 @@ class FontData:
 	fj_svgs = None
 
 	@classmethod
-	def load(cls, embedding_path="data/vectors-200.tsv", image_path="data/font_images", knn_path="data/knn_dataset_weighted_kulah.csv", metadata_path="data/metadata.tsv", glyph_path="data/font_glyphs", svg_data="data/svg_data.pkl"):
+	def load(cls, embedding_path="data/vectors-200.tsv", image_path="data/font_images", knn_path="data/knn_dataset_weighted_kulah_cs.csv", metadata_path="data/metadata.tsv", glyph_path="data/font_glyphs", svg_data="data/svg_data.pkl"):
 		print("Loading embeddings...", end="")
 		if cls.fj_font_data is None:
 			fj_font_metadata = pd.read_csv(metadata_path, delimiter='\t', header=None, skiprows=1)

@@ -88,6 +88,8 @@ def get_weights_kulah(distances):
 
 X = fj_labeled_font_vectors.iloc[:, 1:]
 y = common_attribute_labels.iloc[:, 1:]
+# Normalize attributes
+y = (y - y.min())/(y.max() - y.min())
 known_attribute_labels = od_font_attributes
 
 # Dataset Store
@@ -98,19 +100,25 @@ knn_unweighted = KNeighborsRegressor(n_neighbors=4, weights='uniform', metric=co
 knn_unweighted.fit(X, y)
 preds_1 = knn_unweighted.predict(fj_unlabeled_font_vectors.iloc[:, 1:])
 predicted_attribute_labels = pd.DataFrame(np.concatenate((fj_unlabeled_font_vectors.iloc[:, 0:1], preds_1), axis=1))
-ds_store['unweighted'] = pd.concat([predicted_attribute_labels, known_attribute_labels], axis=0)
+ds_store['unweighted_cs'] = pd.concat([predicted_attribute_labels, known_attribute_labels], axis=0)
 
 knn_weighted_inv = KNeighborsRegressor(n_neighbors=4, weights='distance', metric=cosine_similarity)
 knn_weighted_inv.fit(X, y)
 preds_2 = knn_weighted_inv.predict(fj_unlabeled_font_vectors.iloc[:, 1:])
 predicted_attribute_labels = pd.DataFrame(np.concatenate((fj_unlabeled_font_vectors.iloc[:, 0:1], preds_2), axis=1))
-ds_store['weighted_inv'] = pd.concat([predicted_attribute_labels, known_attribute_labels], axis=0)
+ds_store['weighted_inv_cs'] = pd.concat([predicted_attribute_labels, known_attribute_labels], axis=0)
 
 knn_weighted_kulah = KNeighborsRegressor(n_neighbors=4, weights=get_weights_kulah, metric=cosine_similarity)
 knn_weighted_kulah.fit(X, y)
 preds_3 = knn_weighted_kulah.predict(fj_unlabeled_font_vectors.iloc[:, 1:])
 predicted_attribute_labels = pd.DataFrame(np.concatenate((fj_unlabeled_font_vectors.iloc[:, 0:1], preds_3), axis=1))
-ds_store['weighted_kulah'] = pd.concat([predicted_attribute_labels, known_attribute_labels], axis=0)
+ds_store['weighted_kulah_cs'] = pd.concat([predicted_attribute_labels, known_attribute_labels], axis=0)
+
+knn_weighted_kulah = KNeighborsRegressor(n_neighbors=4, weights=get_weights_kulah, metric='cosine')
+knn_weighted_kulah.fit(X, y)
+preds_4 = knn_weighted_kulah.predict(fj_unlabeled_font_vectors.iloc[:, 1:])
+predicted_attribute_labels = pd.DataFrame(np.concatenate((fj_unlabeled_font_vectors.iloc[:, 0:1], preds_4), axis=1))
+ds_store['weighted_kulah_cd'] = pd.concat([predicted_attribute_labels, known_attribute_labels], axis=0)
 
 ##### DATA EXPORT
 # Format column names
@@ -124,11 +132,24 @@ for ds, all_attribute_labels in ds_store.items():
 	all_attribute_labels.columns = od_attribute_names
 	# Columns re-ordered so that col 0 is font_name, cols [1:7] are typographic_features, cols [7:] are semantic_features
 	knn_dataset = all_attribute_labels[ordered_col_names]
-	# Normalize dataset
 	knn_dataset = knn_dataset.set_index(['font_name'])
-	knn_dataset = (knn_dataset-knn_dataset.mean())/knn_dataset.std()
 
 	# # Export knn_dataset to csv file
 	# # Note: randomize row ordering when splitting into train/test/validation, current row ordering has all predicted font data before known font data
 	file_name = 'knn_dataset_' + ds + '.csv'
 	knn_dataset.to_csv(dir_path + file_name, index=True)
+
+##### DATASET ERROR
+attribute_names = np.loadtxt(dir_path + 'attrNames.txt', dtype=str)
+errors = []
+knn_weighted_kulah = KNeighborsRegressor(n_neighbors=4, weights=get_weights_kulah, metric='cosine')
+for i, row in X.iterrows():
+	knn_weighted_kulah.fit(X.drop(index=i), y.drop(index=i))
+	f_p = knn_weighted_kulah.predict(X.iloc[i, :].values.reshape(1, -1)).flatten()
+	f_t = y.iloc[i, :].values
+	e = np.abs(f_t - f_p)
+	errors.append(e)
+errors = np.asarray(errors)
+avg_errors = np.mean(errors, axis=0)
+result = pd.DataFrame(data=avg_errors, index=attribute_names)
+print(result)
