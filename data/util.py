@@ -2,8 +2,10 @@ import pandas as pd
 import numpy as np
 import os
 import matplotlib.pyplot as plt
+from PIL import Image
 import glyph_scraper
 from torch.utils.data import Dataset
+import torchvision.transforms as transforms
 
 # === Do not edit === #
 DATASET_SIZE = 1883
@@ -119,6 +121,11 @@ class FontData:
 		return plt.imread(filename)[:, :, 0]
 
 	@classmethod
+	def get_glyph_pil(cls, font_name, character):
+		filename = os.path.join(cls.fj_glyphs.loc[font_name].values[0], "{}.png".format(ord(character)))
+		return Image.open(filename)
+
+	@classmethod
 	def get_svg(cls, font_name, character):
 		return None
 
@@ -165,6 +172,10 @@ class FontDataset():
 		self.embedding = FontData.get_all_embedding(kind)
 		self.typographic = FontData.get_all_typographic(kind)
 		self.semantic = FontData.get_all_semantic(kind)
+		self.glyph_transformer = transforms.Compose([
+			transforms.Resize(64),
+			transforms.ToTensor()
+		])
 		self.character = character
 		assert len(self.embedding) == len(self.typographic) == len(self.semantic)
 
@@ -182,10 +193,11 @@ class FontDataset():
 		if 'image' in self.types:
 			sample['image'] = self.data.get_image(self.data.get_name(idx, self.kind))
 		if 'glyph' in self.types:
-  			sample['glyph'] = self.data.get_glyph(self.data.get_name(idx, self.kind), self.character)
+			glyph = self.data.get_glyph_pil(self.data.get_name(idx, self.kind), self.character)
+			sample['glyph'] = self.glyph_transformer(glyph)
 		if 'svg' in self.types:
-  			sample['svg'] = self.data.get_svg(self.data.get_name(idx, self.kind), self.character)
+			sample['svg'] = self.data.get_svg(self.data.get_name(idx, self.kind), self.character)
 		if 'semantic' in self.types:
-  			sample['semantic'] = self.semantic[idx]
+			sample['semantic'] = self.semantic[idx]
 
 		return sample
