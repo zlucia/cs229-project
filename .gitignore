@@ -1,0 +1,8 @@
+untracked/
+data/font_files/*
+data/font_glyphs/*
+data/font_svgs/*
+data/font_images/*
+figures/
+.ipynb_checkpoints/
+__pycache__/

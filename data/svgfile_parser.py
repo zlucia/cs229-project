@@ -1,9 +1,10 @@
-import os
+import os, sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import string
 import pandas as pd
 import numpy as np
-import util
 import glyph_scraper
+import util
 from bs4 import BeautifulSoup
 from multiprocessing import Pool, cpu_count
 
@@ -28,8 +29,8 @@ def parse_svg_files(df):
 	return df.iloc[:, 0].apply(parse_svg_file)
 
 def main():
-	svg_path = 'font_svgs/'
-	svg_data = 'svg_data.pkl'
+	svg_path = 'data/font_svgs/'
+	svg_data = 'data/svg_data.pkl'
 	data = util.FontData
 	data.load()
 

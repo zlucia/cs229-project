@@ -7,13 +7,11 @@ from sklearn.neighbors import KNeighborsRegressor, NearestNeighbors
 from sklearn import metrics
 
 ##### DATA INGESTION
-fj_font_metadata = pd.read_csv('metadata.tsv', delimiter='\t', header=None, skiprows=1)
+dir_path = 'data/'
+fj_font_metadata = pd.read_csv(dir_path + 'metadata.tsv', delimiter='\t', header=None, skiprows=1)
 fj_font_names = fj_font_metadata.iloc[:, 0].to_frame()
-#print(fj_font_names.shape)
-fj_font_vectors = pd.read_csv('vectors-200.tsv', delimiter='\t', header=None)
-#print(fj_font_vectors.shape)
+fj_font_vectors = pd.read_csv(dir_path + 'vectors-200.tsv', delimiter='\t', header=None)
 fj_fonts = pd.concat([fj_font_names, fj_font_vectors], axis=1, ignore_index=True)
-#print(fj_fonts)
 
 # od font name to fj font name conversion function
 def convert_name(name):
@@ -62,7 +60,7 @@ def convert_name(name):
 	return name
 
 # od font data
-od_font_attributes = pd.read_csv('estimatedAttributes.csv', delimiter=',', header=None, skiprows=1)
+od_font_attributes = pd.read_csv(dir_path + 'estimatedAttributes.csv', delimiter=',', header=None, skiprows=1)
 od_font_attributes.iloc[:, 0] = od_font_attributes.iloc[:, 0].apply(convert_name).to_frame()
 od_font_names = od_font_attributes.iloc[:, 0].to_frame()
 
@@ -116,7 +114,7 @@ ds_store['weighted_kulah'] = pd.concat([predicted_attribute_labels, known_attrib
 
 ##### DATA EXPORT
 # Format column names
-od_attribute_names = np.loadtxt('attrNames.txt', dtype=str)
+od_attribute_names = np.loadtxt(dir_path + 'attrNames.txt', dtype=str)
 od_attribute_names = np.insert(od_attribute_names, 0, 'font_name')
 typographic_features = np.asarray(['font_name', 'capitals', 'cursive', 'display', 'italic', 'monospace', 'serif'])
 semantic_features = od_attribute_names[~np.isin(od_attribute_names, typographic_features)]
@@ -133,4 +131,4 @@ for ds, all_attribute_labels in ds_store.items():
 	# # Export knn_dataset to csv file
 	# # Note: randomize row ordering when splitting into train/test/validation, current row ordering has all predicted font data before known font data
 	file_name = 'knn_dataset_' + ds + '.csv'
-	knn_dataset.to_csv(file_name, index=True)
+	knn_dataset.to_csv(dir_path + file_name, index=True)
