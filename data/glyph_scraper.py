@@ -1,8 +1,10 @@
+import os, sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import numpy as np
 import pandas as pd
 import re
 import requests, io, zipfile
-import os, shutil
+import shutil
 import string
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as font_manager
@@ -62,7 +64,7 @@ def main():
 
 	# Downloads font files (ttf files)
 	gf_url = 'https://fonts.google.com/download?family='
-	fontfiles_path = 'font_files/'
+	fontfiles_path = 'data/font_files/'
 	if not os.path.exists(fontfiles_path):
 		os.makedirs(fontfiles_path)
 	for index in font_names_link.index:
@@ -96,7 +98,7 @@ def main():
 	point_size = 10
 	fig_size = (128/600, 128/600)
 
-	fontglyphs_path = 'font_glyphs/'
+	fontglyphs_path = 'data/font_glyphs/'
 	if not os.path.exists(fontglyphs_path):
 		os.makedirs(fontglyphs_path)
 

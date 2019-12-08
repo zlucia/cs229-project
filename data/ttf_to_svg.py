@@ -6,8 +6,8 @@ import subprocess
 # Requires FontForge, download with `brew install fontforge` before running file
 
 # Create fontsvgs directory
-fontfiles_path = 'font_files/'
-fontsvgs_path = 'font_svgs/'
+fontfiles_path = 'data/font_files/'
+fontsvgs_path = 'data/font_svgs/'
 if not os.path.exists(fontsvgs_path):
 	os.makedirs(fontsvgs_path)
 
