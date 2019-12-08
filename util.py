@@ -31,14 +31,13 @@ class FontData:
 
 	@classmethod
 
-	def load(cls, embedding_path="data/vectors-200.tsv", image_path="data/font_images/", knn_path="data/knn_dataset.csv", metadata_path="data/metadata.tsv", glyph_path="data/font_glyphs/", svg_data="data/svg_data.pkl"):
+	def load(cls, embedding_path="data/vectors-200.tsv", image_path="data/font_images/", knn_path="data/knn_dataset_weighted_kulah.csv", metadata_path="data/metadata.tsv", glyph_path="data/font_glyphs/", svg_data="data/svg_data.pkl"):
 		print("Loading embeddings...", end="")
 		if cls.fj_font_data is None:
 			fj_font_metadata = pd.read_csv(metadata_path, delimiter='\t', header=None, skiprows=1)
 			cls.fj_font_names = fj_font_metadata.iloc[:, 0].to_frame()
 			fj_font_vectors = pd.read_csv(embedding_path, delimiter='\t', header=None)
 			cls.fj_font_data = pd.concat([fj_font_metadata, fj_font_vectors, ], axis=1, ignore_index=True).set_index([0])
-			cls.fj_font_data.sort_values(0)
 		print("done")
 
 		print("Loading typographic + semantic vectors...", end="")
