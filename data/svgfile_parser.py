@@ -44,7 +44,7 @@ def main():
 	pool.close()
 	pool.join()
 
-	fj_svgs = pd.concat([sorted_fj_font_names, svg_attributes, ], axis=1, ignore_index=True).set_index([0])
+	fj_svgs = pd.concat([sorted_fj_font_names, svg_attributes, ], axis=1, ignore_index=True)
 	fj_svgs.to_pickle(svg_data)
 	print('SVG data saved to ' + svg_data)
 

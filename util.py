@@ -64,7 +64,8 @@ class FontData:
 			else:
 				sorted_fj_font_names = pd.DataFrame([f for f in sorted(cls.fj_font_names.iloc[:, 0])])
 				sorted_fj_font_glyph_filenames = pd.DataFrame([glyph_path + f + '/' for f in sorted(os.listdir(glyph_path), key=glyph_scraper.get_font_name_compare) if not f.startswith('.')])
-				cls.fj_glyphs = pd.concat([sorted_fj_font_names, sorted_fj_font_glyph_filenames, ], axis=1, ignore_index=True).set_index([0])
+				fj_glyphs = pd.concat([sorted_fj_font_names, sorted_fj_font_glyph_filenames, ], axis=1, ignore_index=True)
+				cls.fj_glyphs = cls.fj_font_names.merge(fj_glyphs, how="inner", on=0).set_index([0])
 		print("done")
 
 		print("Loading SVGs...", end="")
@@ -72,7 +73,8 @@ class FontData:
 			if not os.path.isfile(svg_data):
 				print("SVG data not found; ignoring...", end="")
 			else:
-				cls.fj_svgs = pd.read_pickle(svg_data)
+				fj_svgs = pd.read_pickle(svg_data)
+				cls.fj_svgs = cls.fj_font_names.merge(fj_svgs, how="inner", on=0).set_index([0])
 		print("done")
 
 	@classmethod
