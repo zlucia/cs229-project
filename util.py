@@ -6,6 +6,7 @@ from PIL import Image
 from featurize import get_feature_vector, parse_svg_path
 from data import glyph_scraper
 from torch.utils.data import Dataset
+import torchvision.transforms as transforms
 
 # === Do not edit === #
 DATASET_SIZE = 1883-22
@@ -219,6 +220,9 @@ class FontDataset():
 		self.embedding = FontData.get_all_embedding(kind)
 		self.typographic = FontData.get_all_typographic(kind)
 		self.semantic = FontData.get_all_semantic(kind)
+		self.glyph_transformer = transforms.Compose([
+    		transforms.Resize(64),
+		    transforms.ToTensor()])
 		self.character = character
 		assert len(self.embedding) == len(self.typographic) == len(self.semantic)
 
@@ -238,7 +242,8 @@ class FontDataset():
 		if 'glyph' in self.types:
 			glyph = self.data.get_glyph_pil(self.data.get_name(idx, self.kind), self.character)
 		if 'svg' in self.types:
-			sample['svg'] = self.data.get_svg(self.data.get_name(idx, self.kind), self.character)
+			sample['svg'] = self.glyph_transformer(self.data.get_svg(self.data.get_name(idx, self.kind),
+				self.character))
 		if 'semantic' in self.types:
 			sample['semantic'] = self.semantic[idx]
 
