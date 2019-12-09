@@ -3,14 +3,15 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 from PIL import Image
+from featurize import get_feature_vector, parse_svg_path
 from data import glyph_scraper
 from torch.utils.data import Dataset
 
 # === Do not edit === #
-DATASET_SIZE = 1883
-TRAIN_SIZE = 1318
-VAL_SIZE = 377
-TEST_SIZE = 188
+DATASET_SIZE = 1883-22
+TRAIN_SIZE = 1318-15
+VAL_SIZE = 377-5
+TEST_SIZE = 188-2
 
 np.random.seed(0)
 ind = np.arange(DATASET_SIZE)
@@ -31,7 +32,8 @@ class FontData:
 	fj_svgs = None
 
 	@classmethod
-	def load(cls, embedding_path="data/vectors-200.tsv", image_path="data/font_images", knn_path="data/knn_dataset_weighted_kulah_cs.csv", metadata_path="data/metadata.tsv", glyph_path="data/font_glyphs", svg_data="data/svg_data.pkl"):
+	def load(cls, embedding_path="data/vectors-200.tsv", image_path="data/font_images", knn_path="data/knn_dataset_weighted_kulah_cd.csv",
+		metadata_path="data/metadata.tsv", glyph_path="data/font_glyphs", svg_data="data/svg_data.pkl"):
 		print("Loading embeddings...", end="")
 		if cls.fj_font_data is None:
 			fj_font_metadata = pd.read_csv(metadata_path, delimiter='\t', header=None, skiprows=1)
@@ -61,7 +63,8 @@ class FontData:
 				print("Glyph data not found; ignoring...", end="")
 			else:
 				sorted_fj_font_names = pd.DataFrame([f for f in sorted(cls.fj_font_names.iloc[:, 0])])
-				sorted_fj_font_glyph_filenames = pd.DataFrame([glyph_path + '/' + f + '/' for f in sorted(os.listdir(glyph_path), key=glyph_scraper.get_font_name_compare) if not f.startswith('.')])
+				sorted_fj_font_glyph_filenames = pd.DataFrame([glyph_path + '/' + f + '/' for f in sorted(os.listdir(glyph_path),
+					key=glyph_scraper.get_font_name_compare) if not f.startswith('.')])
 				fj_glyphs = pd.concat([sorted_fj_font_names, sorted_fj_font_glyph_filenames, ], axis=1, ignore_index=True)
 				cls.fj_glyphs = cls.fj_font_names.merge(fj_glyphs, how="inner", on=0).set_index([0])
 		print("done")
@@ -75,17 +78,34 @@ class FontData:
 				cls.fj_svgs = cls.fj_font_names.merge(fj_svgs, how="inner", on=0).set_index([0])
 		print("done")
 
+		invalid = [
+			"Siemreap regular", "Content 700", "Bokor regular", "Suwannaphum regular", "Khmer regular",
+			"Poller One regular", "Dangrek regular", "Moul regular", "Battambang regular", "Kdam Thmor regular",
+			"Content regular", "Koulen regular", "Angkor regular", "Bayon regular", "Metal regular",
+			"Andika regular", "Odor Mean Chey regular", "Chenla regular", "Battambang 700", "Taprom regular",
+			"Freehand regular", "Moulpali regular"
+		]
+
+		cls.fj_font_names = cls.fj_font_names.loc[~cls.fj_font_names[0].isin(invalid)]
+		remove_invalid = lambda x: cls.fj_font_names.merge(x, how="inner", on=0).set_index(0)
+		
+		cls.fj_font_data = remove_invalid(cls.fj_font_data)
+		cls.knn_dataset = remove_invalid(cls.knn_dataset)
+		cls.fj_images = remove_invalid(cls.fj_images)
+		cls.fj_glyphs = remove_invalid(cls.fj_glyphs)
+		cls.fj_svgs = remove_invalid(cls.fj_svgs)
+
 		def validate_data():
 			eps = 1e-5
+			assert len(cls.fj_font_names) == DATASET_SIZE
 			assert cls.fj_font_names.values[0][0] == "Roboto 100"
 			assert abs(cls.fj_font_data.values[0][2] - 3.4823321409e+2) <= eps
-			assert abs(cls.knn_dataset.values[0][1] - -0.7316075960880) <= eps
+			assert abs(cls.knn_dataset.values[0][1] - 0.01142927368) <= eps
 			assert cls.fj_images is None or cls.fj_images.values[0][0].endswith("000000-font-0-100-Roboto.png")
 			assert cls.fj_glyphs is None or cls.fj_glyphs.values[0][0].endswith("Roboto-Thin/")
 			assert cls.fj_svgs is None or cls.fj_svgs.values[0][0]['A'].startswith("M967 435h")
 
 		validate_data()
-
 
 	@classmethod
 	def check_valid(cls, font_name):
@@ -146,8 +166,12 @@ class FontData:
 		return Image.open(filename)
 
 	@classmethod
+	def get_svg_path(cls, font_name, character):
+		return cls.fj_svgs.loc[font_name][1][character]
+
+	@classmethod
 	def get_svg(cls, font_name, character):
-		return None
+		return get_feature_vector(parse_svg_path(cls.get_svg_path(font_name, character)))
 
 	@classmethod
 	def get_all_name(cls, kind):

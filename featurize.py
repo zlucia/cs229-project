@@ -203,7 +203,7 @@ def get_feature_vector(svg_as_list, feat_vec_size=9):
 
         feat_vecs.append(feat)
     feat_vecs = np.stack(feat_vecs, axis=0)
-    feat_vecs /= 5000  # normalize to reasonable range for RNN
+    feat_vecs[:, :6] /= 5000  # normalize to reasonable range for RNN
     return feat_vecs
 
 
