@@ -182,6 +182,7 @@ def get_feature_vector(svg_as_list, feat_vec_size=9):
             prev_ctrl_pt = new_ctrl_pt
         elif seg[0] == 17:  # t
             if not prev_ctrl_q:  # previous command wasn't quadratic
+                new_ctrl_pt = curr_pos
                 feat[:2] = np.zeros(2)  # displacement is 0, first control point is curr_pos
                 feat[2:4] = seg[1:3]  # displacement of final control point from curr_pos
             else:  # previous command was quadratic
