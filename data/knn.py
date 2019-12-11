@@ -103,14 +103,14 @@ model = KNeighborsRegressor(n_neighbors=4, weights=get_weights_kulah, metric='co
 model.fit(X, y)
 preds_1 = model.predict(fj_unlabeled_font_vectors.iloc[:, 1:])
 predicted_attribute_labels = pd.DataFrame(np.concatenate((fj_unlabeled_font_vectors.iloc[:, 0:1], preds_1), axis=1))
-ds_store['4nn_weighted_kulah_cd'] = pd.concat([predicted_attribute_labels, common_attribute_labels], axis=0)
+ds_store['4nn_dataset_weighted_kulah_cd'] = pd.concat([predicted_attribute_labels, common_attribute_labels], axis=0)
 
 # Best KNN model based on error metric
 model = KNeighborsRegressor(n_neighbors=7, weights='distance', metric='cosine')
 model.fit(X, y)
 preds_2 = model.predict(fj_unlabeled_font_vectors.iloc[:, 1:])
 predicted_attribute_labels = pd.DataFrame(np.concatenate((fj_unlabeled_font_vectors.iloc[:, 0:1], preds_2), axis=1))
-ds_store['7nn_weighted_inv_cd'] = pd.concat([predicted_attribute_labels, common_attribute_labels], axis=0)
+ds_store['7nn_dataset_weighted_inv_cd'] = pd.concat([predicted_attribute_labels, common_attribute_labels], axis=0)
 
 ##### DATA EXPORT
 # Format column names
@@ -128,5 +128,5 @@ for ds, all_attribute_labels in ds_store.items():
 
 	# Export knn_dataset to csv file
 	# Note: randomize row ordering when splitting into train/test/validation, current row ordering has all predicted font data before known font data
-	file_name = 'knn_dataset_' + ds + '.csv'
+	file_name = ds + '.csv'
 	knn_dataset.to_csv(dir_path + file_name, index=True)
