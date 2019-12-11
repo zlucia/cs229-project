@@ -76,9 +76,14 @@ fj_labeled_font_vectors = fj_fonts[fj_font_names.iloc[:, 0].isin(shared_font_nam
 # Use the common font attribute labels from od with labeled font vector data in fj to find knns and predict attribute labels
 common_attribute_labels = od_font_attributes.merge(shared_font_names, how='inner', on=0).sort_values(by=0).reset_index(drop=True)
 
+# Export raw dataframes
+fj_unlabeled_font_vectors.to_pickle(dir_path + 'fj_ul_font_vectors.pkl')
+fj_labeled_font_vectors.to_pickle(dir_path + 'fj_l_font_vectors.pkl')
+common_attribute_labels.to_pickle(dir_path + 'common_attribute_labels.pkl')
+
 ##### KNN
-def cosine_similarity(x, y):
-	return np.dot(x, y) / (np.linalg.norm(x) * np.linalg.norm(y))
+# def cosine_similarity(x, y):
+# 	return np.dot(x, y) / (np.linalg.norm(x) * np.linalg.norm(y))
 
 def get_weights_kulah(distances):
 	k = distances.shape[1]
@@ -93,30 +98,19 @@ y = common_attribute_labels.iloc[:, 1:]
 # Dataset Store
 ds_store = {}
 
-# Chose k=4 since error appears to plateau there in od (Fig 6), chose cosine similarity to replicate od
-knn_unweighted = KNeighborsRegressor(n_neighbors=4, weights='uniform', metric=cosine_similarity)
-knn_unweighted.fit(X, y)
-preds_1 = knn_unweighted.predict(fj_unlabeled_font_vectors.iloc[:, 1:])
+# Replicate Kulahcioglu
+model = KNeighborsRegressor(n_neighbors=4, weights=get_weights_kulah, metric='cosine')
+model.fit(X, y)
+preds_1 = model.predict(fj_unlabeled_font_vectors.iloc[:, 1:])
 predicted_attribute_labels = pd.DataFrame(np.concatenate((fj_unlabeled_font_vectors.iloc[:, 0:1], preds_1), axis=1))
-ds_store['unweighted_cs'] = pd.concat([predicted_attribute_labels, common_attribute_labels], axis=0)
+ds_store['4nn_weighted_kulah_cd'] = pd.concat([predicted_attribute_labels, common_attribute_labels], axis=0)
 
-knn_weighted_inv = KNeighborsRegressor(n_neighbors=4, weights='distance', metric=cosine_similarity)
-knn_weighted_inv.fit(X, y)
-preds_2 = knn_weighted_inv.predict(fj_unlabeled_font_vectors.iloc[:, 1:])
+# Best KNN model based on error metric
+model = KNeighborsRegressor(n_neighbors=7, weights='distance', metric='cosine')
+model.fit(X, y)
+preds_2 = model.predict(fj_unlabeled_font_vectors.iloc[:, 1:])
 predicted_attribute_labels = pd.DataFrame(np.concatenate((fj_unlabeled_font_vectors.iloc[:, 0:1], preds_2), axis=1))
-ds_store['weighted_inv_cs'] = pd.concat([predicted_attribute_labels, common_attribute_labels], axis=0)
-
-knn_weighted_kulah = KNeighborsRegressor(n_neighbors=4, weights=get_weights_kulah, metric=cosine_similarity)
-knn_weighted_kulah.fit(X, y)
-preds_3 = knn_weighted_kulah.predict(fj_unlabeled_font_vectors.iloc[:, 1:])
-predicted_attribute_labels = pd.DataFrame(np.concatenate((fj_unlabeled_font_vectors.iloc[:, 0:1], preds_3), axis=1))
-ds_store['weighted_kulah_cs'] = pd.concat([predicted_attribute_labels, common_attribute_labels], axis=0)
-
-knn_weighted_kulah = KNeighborsRegressor(n_neighbors=4, weights=get_weights_kulah, metric='cosine')
-knn_weighted_kulah.fit(X, y)
-preds_4 = knn_weighted_kulah.predict(fj_unlabeled_font_vectors.iloc[:, 1:])
-predicted_attribute_labels = pd.DataFrame(np.concatenate((fj_unlabeled_font_vectors.iloc[:, 0:1], preds_4), axis=1))
-ds_store['weighted_kulah_cd'] = pd.concat([predicted_attribute_labels, common_attribute_labels], axis=0)
+ds_store['7nn_weighted_inv_cd'] = pd.concat([predicted_attribute_labels, common_attribute_labels], axis=0)
 
 ##### DATA EXPORT
 # Format column names
@@ -136,18 +130,3 @@ for ds, all_attribute_labels in ds_store.items():
 	# Note: randomize row ordering when splitting into train/test/validation, current row ordering has all predicted font data before known font data
 	file_name = 'knn_dataset_' + ds + '.csv'
 	knn_dataset.to_csv(dir_path + file_name, index=True)
-
-##### DATASET ERROR
-attribute_names = np.loadtxt(dir_path + 'attrNames.txt', dtype=str)
-errors = []
-knn_weighted_kulah = KNeighborsRegressor(n_neighbors=4, weights=get_weights_kulah, metric='cosine')
-for i, row in X.iterrows():
-	knn_weighted_kulah.fit(X.drop(index=i), y.drop(index=i))
-	f_p = knn_weighted_kulah.predict(X.iloc[i, :].values.reshape(1, -1)).flatten()
-	f_t = y.iloc[i, :].values
-	e = np.abs(f_t - f_p)
-	errors.append(e)
-errors = np.asarray(errors)
-avg_errors = np.mean(errors, axis=0)
-result = pd.DataFrame(data=avg_errors, index=attribute_names)
-print(result)
