@@ -91,9 +91,12 @@ class FontData:
 		
 		cls.fj_font_data = remove_invalid(cls.fj_font_data)
 		cls.knn_dataset = remove_invalid(cls.knn_dataset)
-		cls.fj_images = remove_invalid(cls.fj_images)
-		cls.fj_glyphs = remove_invalid(cls.fj_glyphs)
-		cls.fj_svgs = remove_invalid(cls.fj_svgs)
+		if cls.fj_images is not None:
+			cls.fj_images = remove_invalid(cls.fj_images)
+		if cls.fj_glyphs is not None:
+			cls.fj_glyphs = remove_invalid(cls.fj_glyphs)
+		if cls.fj_svgs is not None:
+			cls.fj_svgs = remove_invalid(cls.fj_svgs)
 
 		def validate_data():
 			eps = 1e-5
