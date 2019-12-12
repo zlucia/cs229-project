@@ -6,6 +6,7 @@ from PIL import Image
 from featurize import get_feature_vector, parse_svg_path
 from data import glyph_scraper
 from torch.utils.data import Dataset
+from torch import Tensor
 import torchvision.transforms as transforms
 
 # === Do not edit === #
@@ -106,7 +107,7 @@ class FontData:
 			assert abs(cls.fj_font_data.values[0][2] - 3.4823321409e+2) <= eps
 			assert abs(cls.knn_dataset.values[0][1] - 0.01142927368) <= eps
 			assert cls.fj_images is None or cls.fj_images.values[0][0].endswith("000000-font-0-100-Roboto.png")
-			assert cls.fj_glyphs is None or cls.fj_glyphs.values[0][0].endswith("Roboto-Thin/")
+			# assert cls.fj_glyphs is None or cls.fj_glyphs.values[0][0].endswith("Roboto-Thin/")
 			assert cls.fj_svgs is None or cls.fj_svgs.values[0][0]['A'].startswith("M967 435h")
 
 		validate_data()
@@ -222,6 +223,7 @@ class FontDataset():
 		self.semantic = FontData.get_all_semantic(kind)
 		self.glyph_transformer = transforms.Compose([
     		transforms.Resize(64),
+    		transforms.Grayscale(num_output_channels=1),
 		    transforms.ToTensor()])
 		self.character = character
 		assert len(self.embedding) == len(self.typographic) == len(self.semantic)
@@ -241,9 +243,9 @@ class FontDataset():
 			sample['image'] = self.data.get_image(self.data.get_name(idx, self.kind))
 		if 'glyph' in self.types:
 			glyph = self.data.get_glyph_pil(self.data.get_name(idx, self.kind), self.character)
+			sample['glyph'] = self.glyph_transformer(glyph)
 		if 'svg' in self.types:
-			sample['svg'] = self.glyph_transformer(self.data.get_svg(self.data.get_name(idx, self.kind),
-				self.character))
+			sample['svg'] = Tensor(self.data.get_svg(self.data.get_name(idx, self.kind), character=self.character))
 		if 'semantic' in self.types:
 			sample['semantic'] = self.semantic[idx]
 
