@@ -13,6 +13,14 @@ from importlib import reload
 import util
 reload(util)
 
+import argparse
+
+parser = argparse.ArgumentParser()
+
+parser.add_argument("--download", dest="download", action="store_true")
+parser.add_argument("--no_download", dest="download", action="store_false")
+parser.set_defaults(download=True)
+
 # Takes roughly 30 min to run
 # Outputs .ttf font files to font_files directory, .png glyph files to font_glyphs directory
 
@@ -54,6 +62,9 @@ def get_font_name_compare(file):
 		return name
 
 def main():
+
+	args = parser.parse_args()
+
 	# Load font names
 	data = util.FontData
 	data.load()
@@ -65,34 +76,37 @@ def main():
 	# Downloads font files (ttf files)
 	gf_url = 'https://fonts.google.com/download?family='
 	fontfiles_path = 'data/font_files/'
-	if not os.path.exists(fontfiles_path):
-		os.makedirs(fontfiles_path)
-	for index in font_names_link.index:
-		font_name = font_names_link.iloc[index, 0]
-		print('Downloading font files for font family ' + font_name)
-		download_url = gf_url + font_name
-		try:
-			r = requests.get(download_url)
-			r.raise_for_status()
-			z = zipfile.ZipFile(io.BytesIO(r.content))
-			for file in z.namelist():
-				name = get_font_name_compare(file)
-				# Keep only font files whose font names are in dataset
-				if name in font_names_compare.values:
-					z.extract(file, fontfiles_path)
-		except requests.exceptions.HTTPError as err:
-			print(err)
 
-	# Move static folder font files to top level of font files directory
-	staticfiles_path = fontfiles_path + 'static/'
-	for file in sorted(os.listdir(staticfiles_path)):
-		shutil.move(staticfiles_path + file, fontfiles_path)
-	os.rmdir(staticfiles_path)
+	if args.download:
+		if not os.path.exists(fontfiles_path):
+			os.makedirs(fontfiles_path)
+		for index in font_names_link.index:
+			font_name = font_names_link.iloc[index, 0]
+			print('Downloading font files for font family ' + font_name)
+			download_url = gf_url + font_name
+			try:
+				r = requests.get(download_url)
+				r.raise_for_status()
+				z = zipfile.ZipFile(io.BytesIO(r.content))
+				for file in z.namelist():
+					name = get_font_name_compare(file)
+					# Keep only font files whose font names are in dataset
+					if name in font_names_compare.values:
+						z.extract(file, fontfiles_path)
+			except requests.exceptions.HTTPError as err:
+				print(err)
 
-	# Sanity check all 1883 fonts were scraped
-	font_files_downloaded = pd.DataFrame([get_font_name_compare(f) for f in os.listdir(fontfiles_path) if not f.startswith('.')])
-	n_missing_fonts = len(font_names_compare[~font_names_compare.iloc[:, 0].isin(font_files_downloaded.iloc[:, 0])])
-	print(str(n_missing_fonts) + ' fonts files missing')
+		# Move static folder font files to top level of font files directory
+		staticfiles_path = fontfiles_path + 'static/'
+		if os.path.exists(staticfiles_path):
+			for file in sorted(os.listdir(staticfiles_path)):
+				shutil.move(staticfiles_path + file, fontfiles_path)
+			os.rmdir(staticfiles_path)
+
+		# Sanity check all 1883 fonts were scraped
+		font_files_downloaded = pd.DataFrame([get_font_name_compare(f) for f in os.listdir(fontfiles_path) if not f.startswith('.')])
+		n_missing_fonts = len(font_names_compare[~font_names_compare.iloc[:, 0].isin(font_files_downloaded.iloc[:, 0])])
+		print(str(n_missing_fonts) + ' fonts files missing')
 
 	# Extract per glyph png files from font files
 	point_size = 10
@@ -104,7 +118,13 @@ def main():
 
 	fontfiles_dir = os.fsencode(fontfiles_path)
 	files_list = [os.fsdecode(f) for f in sorted(os.listdir(fontfiles_path)) if not os.fsdecode(f).startswith('.')]
+	
+	# seen_karma = False
 	for filename in files_list:
+		# if filename == "Karma-Light.ttf":
+			# seen_karma = True
+		# if not seen_karma:
+			# continue
 		print('Extracting per glyph png files from ' + filename)
 
 		# Using matplotlib
@@ -119,7 +139,7 @@ def main():
 			plt.figtext(0.5, 0.5, char, ha='center', va='center', fontproperties=prop, fontsize=point_size)
 			image_path = font_path + str(ord(char)) + ".png"
 			plt.savefig(image_path, dpi=600)
-			plt.close()
+			plt.close(fig)
 
 if __name__ == "__main__":
-    main()
+	main()
