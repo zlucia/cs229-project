@@ -196,7 +196,7 @@ class FontData:
 
 	@classmethod
 	def get_all_typographic(cls, kind):
-		return cls.knn_dataset.values[:, 0:5].take(cls.get_indices(kind), axis=0)
+		return cls.knn_dataset.values[:, 0:6].take(cls.get_indices(kind), axis=0)
 
 	@classmethod
 	def get_all_image(cls, kind):
