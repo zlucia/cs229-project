@@ -25,7 +25,7 @@ def run_experiment(model, test_x, test_y, torch_model=False):
         predictions = torch.Tensor(predictions)
         test_y = torch.Tensor(test_y)
 
-    error = RMSE(y_pred, y)  # L2 distance between predictions, ground truth
+    error = RMSE(predictions, test_y)  # L2 distance between predictions, ground truth
     
     error = error.item()
     if torch_model:

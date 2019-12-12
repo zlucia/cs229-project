@@ -34,50 +34,45 @@ class FontData:
 	fj_svgs = None
 
 	@classmethod
-	def load(cls, embedding_path="data/vectors-200.tsv", image_path="data/font_images", knn_path="data/knn_dataset_weighted_kulah_cd.csv",
+	def load(cls, embedding_path="data/vectors-200.tsv", image_path="data/font_images", knn_path="data/ensemble_dataset.csv",
 		metadata_path="data/metadata.tsv", glyph_path="data/font_glyphs", svg_data="data/svg_data.pkl"):
 		print("Loading embeddings...", end="")
-		if cls.fj_font_data is None:
-			fj_font_metadata = pd.read_csv(metadata_path, delimiter='\t', header=None, skiprows=1)
-			cls.fj_font_names = fj_font_metadata.iloc[:, 0].to_frame()
-			fj_font_vectors = pd.read_csv(embedding_path, delimiter='\t', header=None)
-			cls.fj_font_data = pd.concat([fj_font_metadata, fj_font_vectors, ], axis=1, ignore_index=True).set_index([0])
+		fj_font_metadata = pd.read_csv(metadata_path, delimiter='\t', header=None, skiprows=1)
+		cls.fj_font_names = fj_font_metadata.iloc[:, 0].to_frame()
+		fj_font_vectors = pd.read_csv(embedding_path, delimiter='\t', header=None)
+		cls.fj_font_data = pd.concat([fj_font_metadata, fj_font_vectors, ], axis=1, ignore_index=True).set_index([0])
 		print("done")
 
 		print("Loading typographic + semantic vectors...", end="")
-		if cls.knn_dataset is None:
-			cls.knn_dataset = pd.read_csv(knn_path).set_index(['font_name'])
-			cls.knn_dataset = cls.fj_font_names.merge(cls.knn_dataset, how="left", left_on=0, right_on="font_name").set_index([0])
+		cls.knn_dataset = pd.read_csv(knn_path).set_index(['font_name'])
+		cls.knn_dataset = cls.fj_font_names.merge(cls.knn_dataset, how="left", left_on=0, right_on="font_name").set_index([0])
 		print("done")
 
 		print("Loading images...", end="")
-		if cls.fj_images is None:
-			if not os.path.isdir(image_path):
-				print("Image data not found; ignoring...", end="")
-			else:
-				fj_font_image_filenames = pd.DataFrame([image_path + '/' + f for f in sorted(os.listdir(image_path))])
-				cls.fj_images = pd.concat([cls.fj_font_names, fj_font_image_filenames, ], axis=1, ignore_index=True).set_index([0])
+		if not os.path.isdir(image_path):
+			print("Image data not found; ignoring...", end="")
+		else:
+			fj_font_image_filenames = pd.DataFrame([image_path + '/' + f for f in sorted(os.listdir(image_path))])
+			cls.fj_images = pd.concat([cls.fj_font_names, fj_font_image_filenames, ], axis=1, ignore_index=True).set_index([0])
 		print("done")
 
 		print("Loading glyphs...", end="")
-		if cls.fj_glyphs is None:
-			if not os.path.isdir(glyph_path):
-				print("Glyph data not found; ignoring...", end="")
-			else:
-				sorted_fj_font_names = pd.DataFrame([f for f in sorted(cls.fj_font_names.iloc[:, 0])])
-				sorted_fj_font_glyph_filenames = pd.DataFrame([glyph_path + '/' + f + '/' for f in sorted(os.listdir(glyph_path),
-					key=glyph_scraper.get_font_name_compare) if not f.startswith('.')])
-				fj_glyphs = pd.concat([sorted_fj_font_names, sorted_fj_font_glyph_filenames, ], axis=1, ignore_index=True)
-				cls.fj_glyphs = cls.fj_font_names.merge(fj_glyphs, how="inner", on=0).set_index([0])
+		if not os.path.isdir(glyph_path):
+			print("Glyph data not found; ignoring...", end="")
+		else:
+			sorted_fj_font_names = pd.DataFrame([f for f in sorted(cls.fj_font_names.iloc[:, 0])])
+			sorted_fj_font_glyph_filenames = pd.DataFrame([glyph_path + '/' + f + '/' for f in sorted(os.listdir(glyph_path),
+				key=glyph_scraper.get_font_name_compare) if not f.startswith('.')])
+			fj_glyphs = pd.concat([sorted_fj_font_names, sorted_fj_font_glyph_filenames, ], axis=1, ignore_index=True)
+			cls.fj_glyphs = cls.fj_font_names.merge(fj_glyphs, how="inner", on=0).set_index([0])
 		print("done")
 
 		print("Loading SVGs...", end="")
-		if cls.fj_svgs is None:
-			if not os.path.isfile(svg_data):
-				print("SVG data not found; ignoring...", end="")
-			else:
-				fj_svgs = pd.read_pickle(svg_data)
-				cls.fj_svgs = cls.fj_font_names.merge(fj_svgs, how="inner", on=0).set_index([0])
+		if not os.path.isfile(svg_data):
+			print("SVG data not found; ignoring...", end="")
+		else:
+			fj_svgs = pd.read_pickle(svg_data)
+			cls.fj_svgs = cls.fj_font_names.merge(fj_svgs, how="inner", on=0).set_index([0])
 		print("done")
 
 		invalid = [
@@ -105,10 +100,10 @@ class FontData:
 			assert len(cls.fj_font_names) == DATASET_SIZE
 			assert cls.fj_font_names.values[0][0] == "Roboto 100"
 			assert abs(cls.fj_font_data.values[0][2] - 3.4823321409e+2) <= eps
-			assert abs(cls.knn_dataset.values[0][1] - 0.01142927368) <= eps
+			# assert abs(cls.knn_dataset.values[0][1] - 0.01142927368) <= eps
 			assert cls.fj_images is None or cls.fj_images.values[0][0].endswith("000000-font-0-100-Roboto.png")
 			# assert cls.fj_glyphs is None or cls.fj_glyphs.values[0][0].endswith("Roboto-Thin/")
-			assert cls.fj_svgs is None or cls.fj_svgs.values[0][0]['A'].startswith("M967 435h")
+			# assert cls.fj_svgs is None or cls.fj_svgs.value1s[0][0]['A'].startswith("M967 435h")
 
 		validate_data()
 
@@ -159,6 +154,11 @@ class FontData:
 	def get_image(cls, font_name):
 		filename = cls.fj_images.loc[font_name].values[0]
 		return plt.imread(filename)[:, :, 0]
+
+	@classmethod
+	def get_image_pil(cls, font_name):
+		filename = cls.fj_images.loc[font_name].values[0]
+		return Image.open(filename)
 
 	@classmethod
 	def get_glyph(cls, font_name, character):
@@ -240,7 +240,8 @@ class FontDataset():
 		if 'typographic' in self.types:
 			sample['typographic'] = self.typographic[idx]
 		if 'image' in self.types:
-			sample['image'] = self.data.get_image(self.data.get_name(idx, self.kind))
+			image = self.data.get_image_pil(self.data.get_name(idx, self.kind))
+			sample['image'] = self.glyph_transformer(image)
 		if 'glyph' in self.types:
 			glyph = self.data.get_glyph_pil(self.data.get_name(idx, self.kind), self.character)
 			sample['glyph'] = self.glyph_transformer(glyph)
